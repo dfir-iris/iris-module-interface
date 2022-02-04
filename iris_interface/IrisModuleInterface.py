@@ -25,6 +25,9 @@ from celery import Task, current_app, shared_task
 
 from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
+from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
+
+from iris_interface.IrisInterfaceStatus import IIStatus
 
 
 class IrisPipelineTypes(object):
@@ -344,10 +347,25 @@ class IrisModuleInterface(Task):
         ret = self.pipeline_handler(pipeline_type, pipeline_data)
         return IrisInterfaceStatus.I2Success(data=ret)
 
-    def register_hook(self, iris_hook_name: str, is_manual_hook: bool = False, manual_hook_name: str = None,
-                      retry_on_fail: bool = False, max_retry: int = 0, run_asynchronously: bool = True,
-                      wait_till_return: bool = False) -> IrisInterfaceStatus:
+    def register_hooks(self, module_id: int):
         """
+        This method is call by IRIS upon module registration. This method should call register_to_hook for each hook
+        the module wishes to register. The module ID provided by IRIS in this method NEED to be provided
+        in every call to register_to_hook
+
+        :param module_id: Module ID provided by IRIS
+        :return: Nothing
+        """
+        return IrisInterfaceStatus.I2InterfaceNotImplemented
+
+    @staticmethod
+    def register_to_hook(module_id: int, iris_hook_name: str, is_manual_hook: bool = False,
+                         manual_hook_name: str = None, retry_on_fail: bool = False, max_retry: int = 0,
+                         run_asynchronously: bool = True,
+                         wait_till_return: bool = False) -> IrisInterfaceStatus:
+        """
+        ! DO NOT OVERRIDE !
+
         Register a new hook into IRIS. The hook_name should be a well-known hook to IRIS. iris_hooks table can be
         queried, or by default they are declared in iris source code > source > app > post_init.
 
@@ -361,6 +379,7 @@ class IrisModuleInterface(Task):
         If wait_till_return and run_asynchronously are set, IRIS will wait for the feedback of the module. It means
         the request will be pending, so the action need to be quick.
 
+        :param module_id: Module ID to register
         :param iris_hook_name: Well-known hook name to register to
         :param is_manual_hook: Set to true to indicate an action to run upon user trigger
         :param manual_hook_name: The name of the hook displayed in the UI, if is_manual_hook is set
@@ -370,4 +389,9 @@ class IrisModuleInterface(Task):
         :param wait_till_return: Set to true to wait for the module data
         :return: IrisInterfaceStatus object
         """
-        return IrisInterfaceStatus.I2InterfaceNotImplemented
+        success, log = iris_register_hook(module_id, iris_hook_name, is_manual_hook, manual_hook_name, retry_on_fail,
+                                          max_retry, run_asynchronously, wait_till_return)
+        if success:
+            return IrisInterfaceStatus.I2Success(message=log)
+
+        return IrisInterfaceStatus.I2Error(message=log)
