@@ -29,7 +29,7 @@ from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 
 class IrisPipelineTypes(object):
     """
-    Defines the types of objects available to Iris and the module
+    Defines the types of pipelines available to Iris and the module
     """
     pipeline_type_update = 'pipeline_update'
     pipeline_type_import = 'pipeline_import'
@@ -37,7 +37,7 @@ class IrisPipelineTypes(object):
 
 class IrisModuleTypes(object):
     """
-    Defines the types of objects available to Iris and the module
+    Defines the types of modules available
     """
     module_pipeline = 'module_pipeline'
     module_processor = 'module_processor'
@@ -97,15 +97,19 @@ class IrisModuleInterface(Task):
             return
 
         if self._pipeline_support:
+            if self._module_type == IrisModuleTypes.module_processor:
+                log.critical("Modules of type processor can't have pipelines")
+                return
+
             if self._pipeline_info.get("pipeline_update_support"):
                 if not self._pipeline_info.get("pipeline_import_support"):
                     log.critical("Logic error in the module pipeline. Update cannot be supported without import.")
                     return
 
-            # Verify that the core functions of the pipeline are present
-            # TO DO
-            log.info("Module has initiated successfully")
-            self._is_ready = True
+        # Verify that the core functions of the pipeline are present
+        # TODO
+        log.info("Module has initiated successfully")
+        self._is_ready = True
 
     def auto_configure(self):
         self._evidence_storage = EvidenceStorage()
@@ -290,22 +294,6 @@ class IrisModuleInterface(Task):
         This function is called while Iris initiate, so only ONCE !
         It has to initiate the data needed for future use by the pipeline
         :param app_info: Contains information that might be needed by the module such as DB access
-        :return: IrisModuleInterfaceStatus
-        """
-        return IrisModuleInterface.return_not_implemented()
-
-    def get_computers_list(self, filters: str = None):
-        """
-        Returns a list of computers provided by the module
-        :param filters: str : filtering terms
-        :return: IrisModuleInterfaceStatus
-        """
-        return IrisModuleInterface.return_not_implemented()
-
-    def get_account_list(self, filters: str = None):
-        """
-        Returns a list of computers provided by the module
-        :param filters: str : filtering terms
         :return: IrisModuleInterfaceStatus
         """
         return IrisModuleInterface.return_not_implemented()
