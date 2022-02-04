@@ -27,12 +27,20 @@ from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 
 
-class IrisInterfaceTypes(object):
+class IrisPipelineTypes(object):
     """
     Defines the types of objects available to Iris and the module
     """
     pipeline_type_update = 'pipeline_update'
     pipeline_type_import = 'pipeline_import'
+
+
+class IrisModuleTypes(object):
+    """
+    Defines the types of objects available to Iris and the module
+    """
+    module_pipeline = 'module_pipeline'
+    module_processor = 'module_processor'
 
 
 class IrisModuleInterface(Task):
@@ -48,7 +56,8 @@ class IrisModuleInterface(Task):
     # -- pipeline_info
     # Contains information on the pipeline provided by the module
     # These settings are used to connect the user through the GUI to
-    # the module
+    # the module.
+    # Set it to {} for processor module types
     _pipeline_info = {
             "pipeline_internal_name": "base_pipeline",
             "pipeline_human_name": "Base Pipeline",         # Display to the users on the GUI
@@ -59,6 +68,7 @@ class IrisModuleInterface(Task):
             "pipeline_update_support": True,                # Set to true if the pipeline supports updates
             "pipeline_import_support": True                 # Set to true if the pipeline supports imports
     }
+
     # The below configuration will be proposed to administrators on the GUI
     # to set the parameters of the module. List of JSONs
     _module_configuration = [
