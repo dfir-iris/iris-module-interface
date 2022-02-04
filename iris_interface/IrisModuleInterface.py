@@ -79,6 +79,14 @@ class IrisModuleInterface(Task):
             "default": None,
             "mandatory": False,
             "type": "string"
+        },
+        {
+            "param_name": "ex_https_proxy",
+            "param_human_name": "HTTPS Proxy",
+            "param_description": "Example HTTPS Proxy",
+            "default": None,
+            "mandatory": True,
+            "type": "string"
         }
     ]
 
@@ -116,7 +124,7 @@ class IrisModuleInterface(Task):
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
 
     def internal_configure(self, celery_decorator=None, evidence_storage=None,
-                           mod_web_config = None):
+                           mod_web_config = None) -> IrisInterfaceStatus:
         """
         DO NOT OVERRIDE.
         Configure the module to be able to use to methods provided by Iris. This data
@@ -133,7 +141,7 @@ class IrisModuleInterface(Task):
 
         return IrisInterfaceStatus.I2Success
 
-    def get_evidence_storage(self):
+    def get_evidence_storage(self) -> IrisInterfaceStatus:
         """
         DO NOT OVERRIDE.
         Returns an Evidence Storage class instance. This method should not be override.
@@ -153,7 +161,7 @@ class IrisModuleInterface(Task):
         """
         return self._module_configuration
 
-    def get_configuration(self):
+    def get_configuration(self) -> IrisInterfaceStatus:
         """
         DO NOT OVERRIDE.
         Returns the configuration of the module as set on the GUI.
@@ -171,7 +179,7 @@ class IrisModuleInterface(Task):
 
         return IrisInterfaceStatus.I2Success(data=self._mod_web_config)
 
-    def get_configuration_dict(self):
+    def get_configuration_dict(self) -> IrisInterfaceStatus:
         """
         Converts the standard configuration passed by IRIS engine in a key:value dictionnary flavor,
         using 'param_name' as a key, and 'value' as... well the value.
@@ -199,14 +207,14 @@ class IrisModuleInterface(Task):
             # Just return the error status
             return standard_configuration
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         """
         Returns true if the module is ready to be used, false if not
         :return: Bool
         """
         return self._is_ready
 
-    def get_module_type(self):
+    def get_module_type(self) -> str:
         """
         Returns the type of the module. Should be pipeline or processor.
 
@@ -214,35 +222,35 @@ class IrisModuleInterface(Task):
         """
         return self._module_type
 
-    def get_module_name(self):
+    def get_module_name(self) -> str:
         """
         Returns the name of the current module
         :return: str
         """
         return self._module_name
 
-    def get_module_description(self):
+    def get_module_description(self) -> str:
         """
         Returns the description of the current module
         :return: str
         """
         return self._module_description
 
-    def get_module_version(self):
+    def get_module_version(self) -> float:
         """
         Returns the interface version for compatibility check on Iris side
-        :return: str
+        :return: float
         """
         return self._interface_version
 
-    def get_interface_version(self):
+    def get_interface_version(self) -> float:
         """
         Returns the interface version for compatibility check on Iris side
-        :return: str
+        :return: float
         """
         return self._interface_version
 
-    def is_providing_pipeline(self):
+    def is_providing_pipeline(self) -> bool:
         """
         Return true if the module is providing a pipeline, else false.
         This method is present for future extend of the modules of IRIS.
@@ -266,7 +274,7 @@ class IrisModuleInterface(Task):
 
         return self._pipeline_info
 
-    def pipeline_files_upload(self, base_path, file_handle, case_customer, case_name, is_update):
+    def pipeline_files_upload(self, base_path, file_handle, case_customer, case_name, is_update) -> IrisInterfaceStatus:
         """
         Handle the files savings. This method notify the module that a user initiated a file(s) upload with the
         pipeline. The module is responsible to save the file, thus the security.
@@ -280,7 +288,7 @@ class IrisModuleInterface(Task):
         """
         return IrisModuleInterface.return_not_implemented()
 
-    def pipeline_handler(self, pipeline_type, pipeline_data):
+    def pipeline_handler(self, pipeline_type, pipeline_data) -> IrisInterfaceStatus:
         """
         Main method for the handler
         :param pipeline_type: Type of the pipeline to handle
@@ -289,7 +297,7 @@ class IrisModuleInterface(Task):
         """
         return IrisModuleInterface.return_not_implemented()
 
-    def pipeline_init(self, app_info):
+    def pipeline_init(self, app_info) -> IrisInterfaceStatus:
         """
         This function is called while Iris initiate, so only ONCE !
         It has to initiate the data needed for future use by the pipeline
@@ -299,14 +307,14 @@ class IrisModuleInterface(Task):
         return IrisModuleInterface.return_not_implemented()
 
     @staticmethod
-    def return_not_implemented():
+    def return_not_implemented() -> IrisInterfaceStatus:
         """
         Notify Iris that the interface method is not implemented on the module
         :return: Tuple
         """
         return IrisInterfaceStatus.I2InterfaceNotImplemented
 
-    def wrap_task(self, f):
+    def wrap_task(self, f) -> IrisInterfaceStatus:
         """
         Wrapper around Celery decorator, provided by Iris at runtime
         :param f: Function to be wrapper in Celery decorator
@@ -331,8 +339,35 @@ class IrisModuleInterface(Task):
     def return_error(message: str = None, code: IrisInterfaceStatus = IrisInterfaceStatus.I2UnknownError):
         return False, message if message else []
 
-    def run(self, pipeline_type, pipeline_data):
+    def run(self, pipeline_type, pipeline_data) -> IrisInterfaceStatus:
 
         ret = self.pipeline_handler(pipeline_type, pipeline_data)
         return IrisInterfaceStatus.I2Success(data=ret)
 
+    def register_hook(self, iris_hook_name: str, is_manual_hook: bool = False, manual_hook_name: str = None,
+                      retry_on_fail: bool = False, max_retry: int = 0, run_asynchronously: bool = True,
+                      wait_till_return: bool = False) -> IrisInterfaceStatus:
+        """
+        Register a new hook into IRIS. The hook_name should be a well-known hook to IRIS. iris_hooks table can be
+        queried, or by default they are declared in iris source code > source > app > post_init.
+
+        If is_manual_hook is set, the hook is triggered by user action and not automatically. If set, the iris_hook_name
+        should be a manual hook (aka begin with on_manual_trigger_) otherwise an error is raised.
+
+        If run_asynchronously is set (default), the action will be sent to RabbitMQ and processed asynchronously.
+        If set to false, the action is immediately done, which means it needs to be quick otherwise the request will be
+        pending and user experience degraded.
+
+        If wait_till_return and run_asynchronously are set, IRIS will wait for the feedback of the module. It means
+        the request will be pending, so the action need to be quick.
+
+        :param iris_hook_name: Well-known hook name to register to
+        :param is_manual_hook: Set to true to indicate an action to run upon user trigger
+        :param manual_hook_name: The name of the hook displayed in the UI, if is_manual_hook is set
+        :param retry_on_fail: Set to true to retry the hook if the module fails
+        :param max_retry: Indicates how many time the hook should be retry if the module fails
+        :param run_asynchronously: Set to true to queue the module action in rabbitmq
+        :param wait_till_return: Set to true to wait for the module data
+        :return: IrisInterfaceStatus object
+        """
+        return IrisInterfaceStatus.I2InterfaceNotImplemented
