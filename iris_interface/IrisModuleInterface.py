@@ -41,8 +41,9 @@ class IrisModuleInterface(Task):
     """
     _module_name = "IrisBaseModule"
     _module_description = "Base model of an Iris Module interface"
-    _interface_version = 1.0
+    _interface_version = 1.1
     _module_version = 1.0
+    _module_type = 'pipeline'   # OR processor
     _pipeline_support = True
     # -- pipeline_info
     # Contains information on the pipeline provided by the module
@@ -190,6 +191,14 @@ class IrisModuleInterface(Task):
         :return: Bool
         """
         return self._is_ready
+
+    def get_module_type(self):
+        """
+        Returns the type of the module. Should be pipeline or processor.
+
+        :return: str
+        """
+        return self._module_type
 
     def get_module_name(self):
         """
