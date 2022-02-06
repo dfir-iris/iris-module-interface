@@ -31,7 +31,8 @@ from app.iris_engine.module_handler.module_handler import register_hook as iris_
 
 from iris_interface.IrisInterfaceStatus import IIStatus
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('iris_module_interface')
+log.setLevel(logging.INFO)
 
 
 class IrisPipelineTypes(object):
@@ -106,6 +107,12 @@ class IrisModuleInterface(Task):
         self._celery_decorator = None
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
+        self.message_queue = []
+
+        handler = IrisInterfaceStatus.QueuingHandler(message_queue=self.message_queue,
+                                                     level=logging.INFO,
+                                                     celery_task=self)
+        log.addHandler(handler)
 
         if self._module_name == "IrisBaseModule":
             log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
