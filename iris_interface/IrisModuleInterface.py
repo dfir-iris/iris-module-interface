@@ -18,7 +18,9 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import importlib
-import logging as log
+import logging
+
+from app import app
 from iris_interface import IrisInterfaceStatus
 
 from celery import Task, current_app, shared_task
@@ -28,6 +30,8 @@ from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
 
 from iris_interface.IrisInterfaceStatus import IIStatus
+
+log = logging.getLogger(__name__)
 
 
 class IrisPipelineTypes(object):
@@ -346,6 +350,22 @@ class IrisModuleInterface(Task):
 
         ret = self.pipeline_handler(pipeline_type, pipeline_data)
         return IrisInterfaceStatus.I2Success(data=ret)
+
+    def hooks_handler(self, hook_name:str, data: dict):
+        """
+        This method is called by IRIS each time a hook the module registered is triggered. This function MUST be
+        implemented by modules which have hooks, otherwise the whole app might fail.
+
+        hook_name is the name of the hook which triggered.
+        data is the data associated with the hook.
+
+        The method have to return a data of the date type and form as the one provided in data.
+
+        :param hook_name: hook_name which has been triggered
+        :param data: Data associated to the hook
+        :return: Data
+        """
+        return IrisInterfaceStatus.I2InterfaceNotImplemented
 
     def register_hooks(self, module_id: int):
         """
