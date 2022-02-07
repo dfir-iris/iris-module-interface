@@ -23,7 +23,7 @@ from iris_interface import IrisInterfaceStatus
 
 from celery import Task, current_app, shared_task
 
-from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
+from app.persistence.managers.iris_engine.evidence_storage import EvidenceStorage
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 
 
