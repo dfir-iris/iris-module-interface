@@ -17,7 +17,10 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-import logging as log
+import logging as logger
+
+log = logger.getLogger('iris_module_interface')
+log.setLevel(logger.INFO)
 
 
 class IIStatusCode(object):
@@ -68,6 +71,8 @@ class IIStatus(object):
             self.code = kwargs.get('code')
         if kwargs.get('data'):
             self.data = kwargs.get('data')
+        if kwargs.get('logs'):
+            self.logs = kwargs.get('logs')
         if len(args) == 1 and type(args[0]) == str:
             self.message = args[0]
 
@@ -166,7 +171,7 @@ def iit_report_task_success(user=None, initial=None, logs=None, data=None, case_
                         case_name=case_name, imported_files=imported_files)
 
 
-class QueuingHandler(log.Handler):
+class QueuingHandler(logger.Handler):
     """A thread safe logging.Handler that writes messages into a queue object.
 
        Designed to work with LoggingWidget so log messages from multiple
@@ -183,12 +188,13 @@ class QueuingHandler(log.Handler):
 
     def __init__(self, *args, message_queue, celery_task,  **kwargs):
         """Initialize by copying the queue and sending everything else to superclass."""
-        log.Handler.__init__(self, *args, **kwargs)
+        logger.Handler.__init__(self, *args, **kwargs)
         self.message_queue = message_queue
         self.celery_task = celery_task
 
     def emit(self, record):
         """Add the formatted log message (sans newlines) to the queue."""
         self.message_queue.append(self.format(record).rstrip('\n'))
-        self.celery_task.update_state(state='PROGRESS',
-                                      meta=list(self.message_queue))
+        if self.celery_task.request_stack:
+            self.celery_task.update_state(state='PROGRESS',
+                                          meta=list(self.message_queue))

@@ -31,7 +31,7 @@ from app.iris_engine.module_handler.module_handler import register_hook as iris_
 
 from iris_interface.IrisInterfaceStatus import IIStatus
 
-log = logging.getLogger('iris_module_interface')
+log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
@@ -109,11 +109,6 @@ class IrisModuleInterface(Task):
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
         self.message_queue = []
 
-        handler = IrisInterfaceStatus.QueuingHandler(message_queue=self.message_queue,
-                                                     level=logging.INFO,
-                                                     celery_task=self)
-        log.addHandler(handler)
-
         if self._module_name == "IrisBaseModule":
             log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
             return
@@ -128,14 +123,18 @@ class IrisModuleInterface(Task):
                     log.critical("Logic error in the module pipeline. Update cannot be supported without import.")
                     return
 
-        # Verify that the core functions of the pipeline are present
-        # TODO
         log.info("Module has initiated successfully")
         self._is_ready = True
 
     def auto_configure(self):
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
+
+    def set_log_handler(self):
+        handler = IrisInterfaceStatus.QueuingHandler(message_queue=self.message_queue,
+                                                     level=logging.INFO,
+                                                     celery_task=self)
+        return handler
 
     def internal_configure(self, celery_decorator=None, evidence_storage=None,
                            mod_web_config = None) -> IrisInterfaceStatus:
