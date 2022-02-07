@@ -29,7 +29,7 @@ class IIStatusCode(object):
         self.message = message
 
 
-class IIStatus():
+class IIStatus(object):
     """
     Defines a standard Iris Interface status return object, which contains an IrisInterfaceStatusCode
     and a undefined data object.
@@ -37,11 +37,14 @@ class IIStatus():
     """
 
     def __init__(self, code: int = 0xFFFF,
-                 message: str = "Unknown error", data=None):
+                 message: str = "Unknown error",
+                 data=None,
+                 logs=None):
 
         self.code = code if code else 0xFFFF
-        self.message = message if message else "Unknown error {}".format(code)
+        self.message = message if message else "Unknown message {}".format(code)
         self.data = data
+        self.logs = logs
 
     def is_success(self):
         return self.code < 0xFF00
@@ -51,6 +54,9 @@ class IIStatus():
 
     def get_data(self):
         return self.data
+
+    def get_logs(self):
+        return self.logs
 
     def get_message(self):
         return self.message
@@ -88,11 +94,12 @@ I2Success = IIStatus(0x2, "Success")
 I2ConfigureSuccess = IIStatus(0x3, "Configured successfully")
 
 
-class IITaskStatus(object):
+class IITaskStatus(IIStatus):
     """
-    Defines a standard Iris Task status. This object needs to be return as soon as a task over Celery is used.
+    Defines a standard Iris Task status. This object needs to be return when a task over Celery is used.
     """
     def __init__(self, success, user, initial, logs, data, case_name, imported_files):
+        super().__init__()
         self.success = success
         self.user = user
         self.initial = initial
