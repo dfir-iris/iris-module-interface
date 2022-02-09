@@ -107,6 +107,7 @@ class IrisModuleInterface(Task):
         self._celery_decorator = None
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
+        self._dict_conf = self.get_configuration_dict().get_data()
         self.message_queue = []
 
         if self._module_name == "IrisBaseModule":
