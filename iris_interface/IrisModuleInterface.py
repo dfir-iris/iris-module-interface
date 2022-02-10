@@ -387,9 +387,8 @@ class IrisModuleInterface(Task):
 
     @staticmethod
     def register_to_hook(module_id: int, iris_hook_name: str, is_manual_hook: bool = False,
-                         manual_hook_name: str = None, retry_on_fail: bool = False, max_retry: int = 0,
-                         run_asynchronously: bool = True,
-                         wait_till_return: bool = False) -> IrisInterfaceStatus:
+                         manual_hook_name: str = None,
+                         run_asynchronously: bool = True) -> IrisInterfaceStatus:
         """
         ! DO NOT OVERRIDE !
 
@@ -403,21 +402,15 @@ class IrisModuleInterface(Task):
         If set to false, the action is immediately done, which means it needs to be quick otherwise the request will be
         pending and user experience degraded.
 
-        If wait_till_return and run_asynchronously are set, IRIS will wait for the feedback of the module. It means
-        the request will be pending, so the action need to be quick.
-
         :param module_id: Module ID to register
         :param iris_hook_name: Well-known hook name to register to
         :param is_manual_hook: Set to true to indicate an action to run upon user trigger
         :param manual_hook_name: The name of the hook displayed in the UI, if is_manual_hook is set
-        :param retry_on_fail: Set to true to retry the hook if the module fails
-        :param max_retry: Indicates how many time the hook should be retry if the module fails
         :param run_asynchronously: Set to true to queue the module action in rabbitmq
-        :param wait_till_return: Set to true to wait for the module data
         :return: IrisInterfaceStatus object
         """
-        success, log = iris_register_hook(module_id, iris_hook_name, is_manual_hook, manual_hook_name, retry_on_fail,
-                                          max_retry, run_asynchronously, wait_till_return)
+        success, log = iris_register_hook(module_id, iris_hook_name, is_manual_hook, manual_hook_name,
+                                          run_asynchronously)
         if success:
             return IrisInterfaceStatus.I2Success(message=log)
 
