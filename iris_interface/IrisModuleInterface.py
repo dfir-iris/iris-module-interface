@@ -87,7 +87,6 @@ class IrisModuleInterface(Task):
             "param_description": "Example HTTP Proxy",
             "default": None,
             "mandatory": False,
-            "user_specific": False,
             "type": "string"
         },
         {
@@ -96,7 +95,6 @@ class IrisModuleInterface(Task):
             "param_description": "Example HTTPS Proxy",
             "default": None,
             "mandatory": True,
-            "user_specific": False,
             "type": "string"
         }
     ]
