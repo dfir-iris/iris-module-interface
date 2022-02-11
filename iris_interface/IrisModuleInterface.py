@@ -61,6 +61,7 @@ class IrisModuleInterface(Task):
     _module_version = 1.0
     _module_type = 'pipeline'   # OR processor
     _pipeline_support = True
+
     # -- pipeline_info
     # Contains information on the pipeline provided by the module
     # These settings are used to connect the user through the GUI to
@@ -78,7 +79,7 @@ class IrisModuleInterface(Task):
     }
 
     # The below configuration will be proposed to administrators on the GUI
-    # to set the parameters of the module. List of JSONs
+    # to set the parameters of the module.
     _module_configuration = [
         {
             "param_name": "ex_http_proxy",
@@ -86,6 +87,7 @@ class IrisModuleInterface(Task):
             "param_description": "Example HTTP Proxy",
             "default": None,
             "mandatory": False,
+            "user_specific": False,
             "type": "string"
         },
         {
@@ -94,6 +96,7 @@ class IrisModuleInterface(Task):
             "param_description": "Example HTTPS Proxy",
             "default": None,
             "mandatory": True,
+            "user_specific": False,
             "type": "string"
         }
     ]
