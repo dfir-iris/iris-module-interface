@@ -405,8 +405,7 @@ class IrisModuleInterface(Task):
         return IrisInterfaceStatus.I2InterfaceNotImplemented
 
     @staticmethod
-    def register_to_hook(module_id: int, iris_hook_name: str, is_manual_hook: bool = False,
-                         manual_hook_name: str = None,
+    def register_to_hook(module_id: int, iris_hook_name: str, manual_hook_name: str = None,
                          run_asynchronously: bool = True) -> IrisInterfaceStatus:
         """
         ! DO NOT OVERRIDE !
@@ -423,12 +422,11 @@ class IrisModuleInterface(Task):
 
         :param module_id: Module ID to register
         :param iris_hook_name: Well-known hook name to register to
-        :param is_manual_hook: Set to true to indicate an action to run upon user trigger
         :param manual_hook_name: The name of the hook displayed in the UI, if is_manual_hook is set
         :param run_asynchronously: Set to true to queue the module action in rabbitmq
         :return: IrisInterfaceStatus object
         """
-        success, log = iris_register_hook(module_id, iris_hook_name, is_manual_hook, manual_hook_name,
+        success, log = iris_register_hook(module_id, iris_hook_name, manual_hook_name,
                                           run_asynchronously)
         if success:
             return IrisInterfaceStatus.I2Success(message=log)
