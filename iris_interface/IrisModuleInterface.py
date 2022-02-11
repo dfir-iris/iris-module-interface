@@ -193,6 +193,24 @@ class IrisModuleInterface(Task):
 
         return IrisInterfaceStatus.I2Success(data=self._mod_web_config)
 
+    @staticmethod
+    def _cast_configuration_value(value, value_type):
+        """
+        Returns a cast value of value
+
+        :param value: Value to cast
+        :param value_type: Cast to apply
+        :return: Casted value
+        """
+        if value_type == "bool":
+            value = bool(value.lower() == "True")
+        elif value_type == "int":
+            value = int(value.get('value'))
+        else:
+            value = str(value)
+
+        return value
+
     def get_configuration_dict(self) -> IrisInterfaceStatus:
         """
         Converts the standard configuration passed by IRIS engine in a key:value dictionnary flavor,
@@ -210,9 +228,11 @@ class IrisModuleInterface(Task):
                     configuration = {}
                     for param in standard_configuration_data:
                         if param.get('value'):
-                            configuration[param.get('param_name')] = param.get('value')
+                            configuration[param.get('param_name')] = self._cast_configuration_value(param.get('value'),
+                                                                                                    param.get('type'))
                         else:
-                            configuration[param.get('param_name')] = param.get('default')
+                            configuration[param.get('param_name')] = self._cast_configuration_value(param.get('default'),
+                                                                                                    param.get('type'))
 
                     return IrisInterfaceStatus.I2Success(data=configuration)
                 except Exception as e:
