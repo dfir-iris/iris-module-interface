@@ -204,7 +204,7 @@ class IrisModuleInterface(Task):
         :return: Casted value
         """
         if value_type == "bool" and isinstance(value, str):
-            value = bool(value.lower() == "True")
+            value = bool(value.lower() == "true")
         elif value_type == "int" and isinstance(value, str):
             value = int(value)
 
