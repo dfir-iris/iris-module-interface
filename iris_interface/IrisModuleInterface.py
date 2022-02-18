@@ -125,7 +125,7 @@ class IrisModuleInterface(Task):
                     log.critical("Logic error in the module pipeline. Update cannot be supported without import.")
                     return
 
-        log.info("Module has initiated successfully")
+        log.info("Module has initiated")
         self._is_ready = True
 
     def auto_configure(self):

@@ -76,11 +76,6 @@ class IIStatus(object):
         if len(args) == 1 and type(args[0]) == str:
             self.message = args[0]
 
-        if self.is_failure():
-            log.error('Error {}. {}'.format(self.code, self.message))
-        else:
-            log.info('{}'.format(self.message))
-
         return self
 
 
