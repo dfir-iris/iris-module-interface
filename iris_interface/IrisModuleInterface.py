@@ -17,10 +17,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-import importlib
 import logging
-
-from app import app
 from iris_interface import IrisInterfaceStatus
 
 from celery import Task, current_app, shared_task
@@ -28,8 +25,7 @@ from celery import Task, current_app, shared_task
 from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
-
-from iris_interface.IrisInterfaceStatus import IIStatus
+from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -190,7 +186,9 @@ class IrisModuleInterface(Task):
         :return: IrisInterfaceStatus
         """
         if not self._mod_web_config:
-            return IrisInterfaceStatus.I2InterfaceNotReady("Module configuration not retrieved")
+            data = self.get_init_configuration()
+            return IrisInterfaceStatus.I2InterfaceNotReady("Module configuration not retrieved, using default",
+                                                           data=data)
 
         return IrisInterfaceStatus.I2Success(data=self._mod_web_config)
 
@@ -226,7 +224,7 @@ class IrisModuleInterface(Task):
                 try:
                     configuration = {}
                     for param in standard_configuration_data:
-                        if param.get('value'):
+                        if param.get('value') is not None:
                             configuration[param.get('param_name')] = self._cast_configuration_value(param.get('value'),
                                                                                                     param.get('type'))
                         else:
@@ -432,3 +430,19 @@ class IrisModuleInterface(Task):
             return IrisInterfaceStatus.I2Success(message=log)
 
         return IrisInterfaceStatus.I2Error(message=log)
+
+    @staticmethod
+    def deregister_from_hook(module_id: int, iris_hook_name: str) -> IrisInterfaceStatus:
+        """
+        ! DO NOT OVERRIDE !
+
+        Deregister from an existing hook. The hook_name should be a well-known hook to IRIS. No error are thrown if the
+        hook wasn't register in the first place
+
+        :param module_id: Module ID to deregister
+        :param iris_hook_name: hook_name to deregister from
+        :return: IrisInterfaceStatus object
+        """
+        success, log = iris_deregister_from_hook(module_id, iris_hook_name)
+
+        return IrisInterfaceStatus.I2Success(message=log)
