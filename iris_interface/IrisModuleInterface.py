@@ -18,6 +18,8 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import logging
+
+from app import app
 from iris_interface import IrisInterfaceStatus
 
 from celery import Task, current_app, shared_task
@@ -27,8 +29,9 @@ from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
 from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log = app.logger
+
+from celery.app.log import TaskFormatter
 
 
 class IrisPipelineTypes(object):
@@ -128,11 +131,13 @@ class IrisModuleInterface(Task):
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
 
-    def set_log_handler(self):
+    def set_log_handler(self, log):
         handler = IrisInterfaceStatus.QueuingHandler(message_queue=self.message_queue,
-                                                     level=logging.INFO,
+                                                     level=logging.DEBUG,
                                                      celery_task=self)
-        return handler
+        log.addHandler(handler)
+
+        return log
 
     def internal_configure(self, celery_decorator=None, evidence_storage=None,
                            mod_web_config = None) -> IrisInterfaceStatus:

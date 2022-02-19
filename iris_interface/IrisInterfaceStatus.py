@@ -47,7 +47,7 @@ class IIStatus(object):
         self.code = code if code else 0xFFFF
         self.message = message if message else "Unknown message {}".format(code)
         self.data = data
-        self.logs = logs
+        self.logs = logs if logs else []
 
     def is_success(self):
         return self.code < 0xFF00
@@ -77,6 +77,17 @@ class IIStatus(object):
             self.message = args[0]
 
         return self
+
+
+def merge_status(status_1: IIStatus, status_2: IIStatus):
+    if status_2.is_failure():
+        status_1.code = status_2.code
+
+    status_1.data = [status_1.data, status_2.data] if status_1.data else status_2.data
+    status_1.message = status_1.message + status_2.message
+    status_1.logs.append(status_2.logs)
+
+    return status_1
 
 
 # Definition of the Standard Interface Status codes
