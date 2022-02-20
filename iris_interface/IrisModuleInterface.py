@@ -18,8 +18,9 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import logging
+import string
 
-from app import app
+from random import choice
 from iris_interface import IrisInterfaceStatus
 
 from celery import Task, current_app, shared_task
@@ -28,10 +29,6 @@ from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
 from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
-
-log = app.logger
-
-from celery.app.log import TaskFormatter
 
 
 class IrisPipelineTypes(object):
@@ -103,41 +100,48 @@ class IrisModuleInterface(Task):
         Init of the module. Checks that the module is well configured
         """
 
+        rand = ''.join(choice(string.ascii_lowercase) for _ in range(8))
+        self.log = logging.getLogger(f"{__name__}_{rand}")
+        self.message_queue = []
+        self.set_log_handler()
+
         self._is_ready = False
         self._celery_decorator = None
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
+
+        print(type(self._mod_web_config))
         self._dict_conf = self.get_configuration_dict().get_data()
-        self.message_queue = []
+        print(type(self._dict_conf))
 
         if self._module_name == "IrisBaseModule":
-            log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
+            self.log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
             return
 
         if self._pipeline_support:
             if self._module_type == IrisModuleTypes.module_processor:
-                log.critical("Modules of type processor can't have pipelines")
+                self.log.critical("Modules of type processor can't have pipelines")
                 return
 
             if self._pipeline_info.get("pipeline_update_support"):
                 if not self._pipeline_info.get("pipeline_import_support"):
-                    log.critical("Logic error in the module pipeline. Update cannot be supported without import.")
+                    self.log.critical("Logic error in the module pipeline. Update cannot be supported without import.")
                     return
 
-        log.info("Module has initiated")
+        self.log.info("Module has initiated")
         self._is_ready = True
 
     def auto_configure(self):
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
 
-    def set_log_handler(self, log):
+    def set_log_handler(self):
         handler = IrisInterfaceStatus.QueuingHandler(message_queue=self.message_queue,
                                                      level=logging.DEBUG,
                                                      celery_task=self)
-        log.addHandler(handler)
+        self.log.addHandler(handler)
 
-        return log
+        return
 
     def internal_configure(self, celery_decorator=None, evidence_storage=None,
                            mod_web_config = None) -> IrisInterfaceStatus:
@@ -192,9 +196,11 @@ class IrisModuleInterface(Task):
         """
         if not self._mod_web_config:
             data = self.get_init_configuration()
+            self.log.warning("Module configuration not retrieved, using default")
             return IrisInterfaceStatus.I2InterfaceNotReady("Module configuration not retrieved, using default",
                                                            data=data)
 
+        self.log.info("Using server configuration")
         return IrisInterfaceStatus.I2Success(data=self._mod_web_config)
 
     @staticmethod
@@ -215,15 +221,17 @@ class IrisModuleInterface(Task):
 
     def get_configuration_dict(self) -> IrisInterfaceStatus:
         """
-        Converts the standard configuration passed by IRIS engine in a key:value dictionnary flavor,
+        Converts the standard configuration passed by IRIS engine in a key:value dictionary flavor,
         using 'param_name' as a key, and 'value' as... well the value.
 
         :return IrisInterfaceStatus
         """
         standard_configuration = self.get_configuration()
         if standard_configuration.is_success():
+            self.log.info('Retrieved server configuration')
             standard_configuration_data = standard_configuration.get_data()
             if standard_configuration is None:
+                self.log.info('Iris returned empty configuration')
                 return IrisInterfaceStatus.I2Error("IRIS returned empty configuration")
             else:
                 try:
@@ -238,9 +246,12 @@ class IrisModuleInterface(Task):
 
                     return IrisInterfaceStatus.I2Success(data=configuration)
                 except Exception as e:
+                    self.log.info('Configuration malformed')
                     return IrisInterfaceStatus.I2Error("Configuration malformed: {e}".format(e=e))
         else:
             # Just return the error status
+            self.log.info(f'Returning faulty configuration.{standard_configuration.message}. '
+                          f'{standard_configuration.logs}')
             return standard_configuration
 
     def is_ready(self) -> bool:

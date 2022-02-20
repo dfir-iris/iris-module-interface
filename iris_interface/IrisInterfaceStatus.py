@@ -19,9 +19,6 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import logging as logger
 
-log = logger.getLogger('iris_module_interface')
-log.setLevel(logger.INFO)
-
 
 class IIStatusCode(object):
     """
@@ -78,6 +75,9 @@ class IIStatus(object):
 
         return self
 
+    def __bool__(self):
+        return self.is_success()
+
 
 def merge_status(status_1: IIStatus, status_2: IIStatus):
     if status_2.is_failure():
@@ -91,8 +91,12 @@ def merge_status(status_1: IIStatus, status_2: IIStatus):
 
 
 # Definition of the Standard Interface Status codes
+I2CodeError = 0xFFFE
+I2CodeNoError = 0x1
+I2CodeSuccess = 0x2
+
 I2UnknownError = IIStatus(0xFFFF, "Unknown error")
-I2Error = IIStatus(0xFFFE, "Unknown error")
+I2Error = IIStatus(I2CodeError, "Unknown error")
 I2InterfaceNotImplemented = IIStatus(0xFF00, "Interface function not implemented")
 I2UnexpectedResult = IIStatus(0xFF01, "Unexpected result")
 I2FileNotFound = IIStatus(0xFF02, "File not found")
@@ -100,8 +104,8 @@ I2InterfaceNotReady = IIStatus(0xFF03, "Interface not ready")
 I2InterfaceNotInitialized = IIStatus(0xFF04, "Interface not initialized")
 I2CriticalError = IIStatus(0xFF05, "Critical error")
 
-I2NoError = IIStatus(0x1, "No errors")
-I2Success = IIStatus(0x2, "Success")
+I2NoError = IIStatus(I2CodeNoError, "No errors")
+I2Success = IIStatus(I2CodeSuccess, "Success")
 I2ConfigureSuccess = IIStatus(0x3, "Configured successfully")
 
 
