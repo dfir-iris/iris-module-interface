@@ -109,10 +109,7 @@ class IrisModuleInterface(Task):
         self._celery_decorator = None
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
-
-        print(type(self._mod_web_config))
         self._dict_conf = self.get_configuration_dict().get_data()
-        print(type(self._dict_conf))
 
         if self._module_name == "IrisBaseModule":
             self.log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
