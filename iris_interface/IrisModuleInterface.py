@@ -358,23 +358,6 @@ class IrisModuleInterface(Task):
         """
         return IrisInterfaceStatus.I2InterfaceNotImplemented
 
-    def wrap_task(self, f) -> IrisInterfaceStatus:
-        """
-        Wrapper around Celery decorator, provided by Iris at runtime
-        :param f: Function to be wrapper in Celery decorator
-        :return: Decorated function
-        """
-        if self._celery_decorator:
-            try:
-
-                _in = self._celery_decorator(f, bind=True)
-                return IrisInterfaceStatus.I2NoError(data=_in)
-
-            except Exception as e:
-                return IrisInterfaceStatus.I2UnknownError(message=e.__str__())
-
-        return IrisInterfaceStatus.I2UnknownError(message="Celery decorator unavailable")
-
     @staticmethod
     def return_success(message: str = None):
         return True, message if message else []
@@ -385,8 +368,7 @@ class IrisModuleInterface(Task):
 
     def run(self, pipeline_type, pipeline_data) -> IrisInterfaceStatus:
 
-        ret = self.pipeline_handler(pipeline_type, pipeline_data)
-        return IrisInterfaceStatus.I2Success(data=ret)
+        return self.pipeline_handler(pipeline_type, pipeline_data)
 
     def hooks_handler(self, hook_name:str, data: dict):
         """
