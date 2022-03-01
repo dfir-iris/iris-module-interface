@@ -370,7 +370,7 @@ class IrisModuleInterface(Task):
 
         return self.pipeline_handler(pipeline_type, pipeline_data)
 
-    def hooks_handler(self, hook_name:str, data: dict):
+    def hooks_handler(self, hook_name:str, hook_ui_name:str, data: dict):
         """
         This method is called by IRIS each time a hook the module registered is triggered. This function MUST be
         implemented by modules which have hooks, otherwise the whole app might fail.
@@ -381,6 +381,7 @@ class IrisModuleInterface(Task):
         The method have to return a data of the date type and form as the one provided in data.
 
         :param hook_name: hook_name which has been triggered
+        :param hook_ui_name: Name of the UI hook if manual hook
         :param data: Data associated to the hook
         :return: Data
         """
