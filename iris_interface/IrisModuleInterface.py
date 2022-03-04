@@ -26,6 +26,7 @@ from iris_interface import IrisInterfaceStatus
 from celery import Task, current_app, shared_task
 
 from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
+from app.datamgmt.manage.manage_srv_settings_db import get_server_settings_as_dict
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
 from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
@@ -110,6 +111,7 @@ class IrisModuleInterface(Task):
         self._evidence_storage = EvidenceStorage()
         self._mod_web_config = get_mod_config_by_name(self._module_name).get_data()
         self._dict_conf = self.get_configuration_dict().get_data()
+        self._server_conf = get_server_settings_as_dict()
 
         if self._module_name == "IrisBaseModule":
             self.log.critical("The module cannot be named as IrisBaseModule. Please reconfigure the module")
@@ -127,6 +129,18 @@ class IrisModuleInterface(Task):
 
         self.log.info("Module has initiated")
         self._is_ready = True
+
+    @property
+    def module_dict_conf(self):
+        """Each time the module configuration is accessed, we refresh"""
+        self._dict_conf = self.get_configuration_dict().get_data()
+        return self._dict_conf
+
+    @property
+    def server_dict_conf(self):
+        """Each time the server configuration is accessed, we refresh"""
+        self._server_conf = get_server_settings_as_dict()
+        return self._server_conf
 
     def auto_configure(self):
         self._evidence_storage = EvidenceStorage()
