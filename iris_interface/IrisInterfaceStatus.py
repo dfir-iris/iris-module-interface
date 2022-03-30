@@ -17,7 +17,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-import logging as log
+import logging as logger
 
 
 class IIStatusCode(object):
@@ -29,7 +29,7 @@ class IIStatusCode(object):
         self.message = message
 
 
-class IIStatus():
+class IIStatus(object):
     """
     Defines a standard Iris Interface status return object, which contains an IrisInterfaceStatusCode
     and a undefined data object.
@@ -37,11 +37,14 @@ class IIStatus():
     """
 
     def __init__(self, code: int = 0xFFFF,
-                 message: str = "Unknown error", data=None):
+                 message: str = "Unknown error",
+                 data=None,
+                 logs=None):
 
         self.code = code if code else 0xFFFF
-        self.message = message if message else "Unknown error {}".format(code)
+        self.message = message if message else "Unknown message {}".format(code)
         self.data = data
+        self.logs = logs if logs else []
 
     def is_success(self):
         return self.code < 0xFF00
@@ -51,6 +54,9 @@ class IIStatus():
 
     def get_data(self):
         return self.data
+
+    def get_logs(self):
+        return self.logs
 
     def get_message(self):
         return self.message
@@ -62,20 +68,40 @@ class IIStatus():
             self.code = kwargs.get('code')
         if kwargs.get('data'):
             self.data = kwargs.get('data')
+        if kwargs.get('logs'):
+            self.logs = kwargs.get('logs')
         if len(args) == 1 and type(args[0]) == str:
             self.message = args[0]
 
-        if self.is_failure():
-            log.error('Error {}. {}'.format(self.code, self.message))
-        else:
-            log.info('{}'.format(self.message))
-
         return self
+
+    def __bool__(self):
+        return self.is_success()
+
+
+def merge_status(status_1: IIStatus, status_2: IIStatus):
+    if status_1 is None:
+        return status_2
+    if status_2 is None:
+        return status_1
+
+    if status_2.is_failure():
+        status_1.code = status_2.code
+
+    status_1.data = [status_1.data, status_2.data] if status_1.data else status_2.data
+    status_1.message = f"{status_1.message} - {status_2.message}"
+    status_1.logs.append(status_2.logs)
+
+    return status_1
 
 
 # Definition of the Standard Interface Status codes
+I2CodeError = 0xFFFE
+I2CodeNoError = 0x1
+I2CodeSuccess = 0x2
+
 I2UnknownError = IIStatus(0xFFFF, "Unknown error")
-I2Error = IIStatus(0xFFFE, "Unknown error")
+I2Error = IIStatus(I2CodeError, "Unspecified error")
 I2InterfaceNotImplemented = IIStatus(0xFF00, "Interface function not implemented")
 I2UnexpectedResult = IIStatus(0xFF01, "Unexpected result")
 I2FileNotFound = IIStatus(0xFF02, "File not found")
@@ -83,83 +109,12 @@ I2InterfaceNotReady = IIStatus(0xFF03, "Interface not ready")
 I2InterfaceNotInitialized = IIStatus(0xFF04, "Interface not initialized")
 I2CriticalError = IIStatus(0xFF05, "Critical error")
 
-I2NoError = IIStatus(0x1, "No errors")
-I2Success = IIStatus(0x2, "Success")
+I2NoError = IIStatus(I2CodeNoError, "No errors")
+I2Success = IIStatus(I2CodeSuccess, "Success")
 I2ConfigureSuccess = IIStatus(0x3, "Configured successfully")
 
 
-class IITaskStatus(object):
-    """
-    Defines a standard Iris Task status. This object needs to be return as soon as a task over Celery is used.
-    """
-    def __init__(self, success, user, initial, logs, data, case_name, imported_files):
-        self.success = success
-        self.user = user
-        self.initial = initial
-        self.logs = logs
-        self.data = data
-        self.case_name = case_name
-        self.imported_files = imported_files
-
-    def _asdict(self):
-        json_obj = {
-            'success': self.success,
-            'user': self.user,
-            'initial': self.initial,
-            'logs': self.logs,
-            'data': self.data,
-            'case_name': self.case_name,
-            'imported_files': self.imported_files
-        }
-        return json_obj
-
-    def merge_task_results(self, new_ret, is_update=False):
-        """
-        Merge the result of multiple tasks
-        :param is_update: Set to true if task is an update
-        :param new_ret: Task result to merge
-        :return:
-        """
-        # Set the overall task success at false if any of the task failed
-        self.success = new_ret.success and self.success
-
-        # Concatenate the tasks logs to display everything at the end
-        self.logs += new_ret.logs
-
-        self.data['is_update'] = is_update
-
-
-def iit_report_task_failure(user=None, initial=None, logs=None, data=None, case_name=None, imported_files=None):
-    """
-    Reports a task failure
-    :param user: User who started the task
-    :param initial: Initial task ID
-    :param logs: Log output as a list
-    :param data: Returned data
-    :param case_name: Name of the case the task was run
-    :param imported_files: List of the files processed successfully
-    :return: IITaskStatus
-    """
-    return IITaskStatus(success=False, user=user, initial=initial, logs=logs, data=data,
-                        case_name=case_name, imported_files=imported_files)
-
-
-def iit_report_task_success(user=None, initial=None, logs=None, data=None, case_name=None, imported_files=None):
-    """
-    Reports a task Success
-    :param user: User who started the task
-    :param initial: Initial task ID
-    :param logs: Log output as a list
-    :param data: Returned data
-    :param case_name: Name of the case the task was run
-    :param imported_files: List of the files processed successfully
-    :return: IITaskStatus
-    """
-    return IITaskStatus(success=True, user=user, initial=initial, logs=logs, data=data,
-                        case_name=case_name, imported_files=imported_files)
-
-
-class QueuingHandler(log.Handler):
+class QueuingHandler(logger.Handler):
     """A thread safe logging.Handler that writes messages into a queue object.
 
        Designed to work with LoggingWidget so log messages from multiple
@@ -176,12 +131,13 @@ class QueuingHandler(log.Handler):
 
     def __init__(self, *args, message_queue, celery_task,  **kwargs):
         """Initialize by copying the queue and sending everything else to superclass."""
-        log.Handler.__init__(self, *args, **kwargs)
+        logger.Handler.__init__(self, *args, **kwargs)
         self.message_queue = message_queue
         self.celery_task = celery_task
 
     def emit(self, record):
         """Add the formatted log message (sans newlines) to the queue."""
         self.message_queue.append(self.format(record).rstrip('\n'))
-        self.celery_task.update_state(state='PROGRESS',
-                                      meta=list(self.message_queue))
+        if self.celery_task.request_stack:
+            self.celery_task.update_state(state='PROGRESS',
+                                          meta=list(self.message_queue))

@@ -24,7 +24,7 @@ import setuptools
 
 setuptools.setup(
      name='iris_interface',
-     version='0.1',
+     version='1.1',
      packages=['iris_interface'],
      author="Airbus CyberSecurity",
      author_email="ir@cyberactionlab.net",
