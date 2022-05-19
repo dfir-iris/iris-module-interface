@@ -4,7 +4,7 @@
 
 This Python package is used by IRIS modules to interact and extend IRIS capabilities.  
 It's the interface which module have to use to communicate with the platform.   
-Please read IRIS [documentation](https://dfir-iris.github.io/development/modules/) for further information. 
+Please read IRIS [documentation](https://docs.dfir-iris.org/development/modules/) for further information. 
 
 ## License
 
