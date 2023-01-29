@@ -19,17 +19,16 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import logging
 import string
-
 from random import choice
-from iris_interface import IrisInterfaceStatus
-
-from celery import Task, current_app, shared_task
 
 from app.datamgmt.iris_engine.evidence_storage import EvidenceStorage
 from app.datamgmt.manage.manage_srv_settings_db import get_server_settings_as_dict
+from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
 from app.iris_engine.module_handler.module_handler import get_mod_config_by_name
 from app.iris_engine.module_handler.module_handler import register_hook as iris_register_hook
-from app.iris_engine.module_handler.module_handler import deregister_from_hook as iris_deregister_from_hook
+from celery import Task
+
+from iris_interface import IrisInterfaceStatus
 
 
 class IrisPipelineTypes(object):
@@ -54,8 +53,8 @@ class IrisModuleInterface(Task):
     """
     _module_name = "IrisBaseModule"
     _module_description = "Base model of an Iris Module interface"
-    _interface_version = 1.1
-    _module_version = 1.0
+    _interface_version = "1.2.0"
+    _module_version = "1.0.0"
     _module_type = 'pipeline'   # OR processor
     _pipeline_support = True
 
@@ -211,7 +210,6 @@ class IrisModuleInterface(Task):
             return IrisInterfaceStatus.I2InterfaceNotReady("Module configuration not retrieved, using default",
                                                            data=data)
 
-        self.log.info("Using server configuration")
         return IrisInterfaceStatus.I2Success(data=self._mod_web_config)
 
     @staticmethod
@@ -294,14 +292,14 @@ class IrisModuleInterface(Task):
         """
         return self._module_description
 
-    def get_module_version(self) -> float:
+    def get_module_version(self) -> str:
         """
-        Returns the interface version for compatibility check on Iris side
+        Returns the module version
         :return: float
         """
-        return self._interface_version
+        return self._module_version
 
-    def get_interface_version(self) -> float:
+    def get_interface_version(self) -> str:
         """
         Returns the interface version for compatibility check on Iris side
         :return: float

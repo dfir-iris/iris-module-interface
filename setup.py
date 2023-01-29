@@ -17,19 +17,24 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+import pathlib
 
 import setuptools
 
+# The directory containing this file
+CURR_DIR = pathlib.Path(__file__).parent
+
+# The text of the README file
+README = (CURR_DIR / "README.md").read_text()
 
 setuptools.setup(
      name='iris_interface',
-     version='1.1',
+     version='1.2.0',
      packages=['iris_interface'],
-     author="Airbus CyberSecurity",
-     author_email="ir@cyberactionlab.net",
+     author="DFIR-IRIS - Airbus CyberSecurity",
+     author_email="contact@dfir-iris.org",
      description="An interface for Iris modules",
-     long_description="An interface for Iris modules",
+     long_description=README,
      long_description_content_type="text/markdown",
      url="https://github.com/dfir-iris/iris-module-interface",
      classifiers=[
