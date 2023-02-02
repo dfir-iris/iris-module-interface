@@ -102,6 +102,7 @@ class IrisModuleInterface(Task):
 
         rand = ''.join(choice(string.ascii_lowercase) for _ in range(8))
         self.log = logging.getLogger(f"{__name__}_{rand}")
+        self.log.setLevel(logging.DEBUG)
         self.message_queue = []
         self.set_log_handler()
 
